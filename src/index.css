@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 20 100% 60%; /* #FF6B35 converted to HSL approx */
+    --primary-foreground: 0 0% 100%;
+ 
+    --secondary: 0 0% 10%; /* #1A1A1A */
+    --secondary-foreground: 0 0% 100%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 36 100% 64%; /* #FFB84D */
+    --accent-foreground: 0 0% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 20 100% 60%;
+ 
+    --radius: 0.75rem;
+    
+    --goku-orange: #FF6B35;
+    --goku-black: #1A1A1A;
+    --goku-accent: #FFB84D;
+  }
+ 
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 20 100% 60%;
+    --primary-foreground: 0 0% 10%;
+ 
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
+ 
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 20 100% 60%;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-goku-orange { color: var(--goku-orange); }
+  .bg-goku-orange { background-color: var(--goku-orange); }
+  .border-goku-orange { border-color: var(--goku-orange); }
+  
+  .text-goku-black { color: var(--goku-black); }
+  .bg-goku-black { background-color: var(--goku-black); }
+  
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg;
+  }
+  
+  .hover-scale {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; 
+}
