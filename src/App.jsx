@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/components/MainLayout';
+import Header from '@/components/Header'; // <--- NEW IMPORT
 import { useGymData } from '@/hooks/useGymData';
 
 // Pages
@@ -28,9 +29,9 @@ function App() {
       case 'plans': return <MembershipPlans data={gymData} />;
       case 'attendance': return <AttendanceTracking data={gymData} />;
       case 'billing': return <BillingPayment data={gymData} />;
-      case 'expenses': return <ExpenseManagement />; // New Module
+      case 'expenses': return <ExpenseManagement />; 
       case 'inquiries': return <InquiryManagement data={gymData} />;
-      case 'sms': return <SMSNotifications />; // New Module
+      case 'sms': return <SMSNotifications />; 
       case 'financial': return <FinancialReports data={gymData} />;
       case 'reports': return <Reports data={gymData} />;
       case 'profile': return <GymProfile data={gymData} />;
@@ -53,7 +54,19 @@ function App() {
         onTabChange={setActiveTab}
         gymProfile={gymData.gymProfile}
       >
-        {renderContent()}
+        {/* --- NEW LAYOUT STRUCTURE --- */}
+        {/* This div ensures the Header stays at top and content scrolls below it */}
+        <div className="flex flex-col h-full w-full overflow-hidden bg-slate-50 dark:bg-slate-900 transition-colors">
+           
+           {/* 1. The Interactive Header */}
+           <Header data={gymData} />
+           
+           {/* 2. The Scrollable Page Content */}
+           <main className="flex-1 overflow-y-auto p-4 md:p-6">
+              {renderContent()}
+           </main>
+
+        </div>
       </MainLayout>
       
       <Toaster />
