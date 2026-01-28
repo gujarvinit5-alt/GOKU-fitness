@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Camera, RefreshCw } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Plus, Search, Edit2, Trash2, Camera, RefreshCw, Eye, DollarSign, Calendar, Phone, Mail, MapPin } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormInput, FormSelect } from '@/components/ui/form-input';
@@ -11,14 +11,20 @@ import { validateMemberForm } from '@/utils/ValidationUtils';
 import { exportMembersToCSV } from '@/utils/ExportUtils';
 
 const Members = ({ data }) => {
-  const { members, plans, addMember, updateMember, deleteMember } = data;
+  // Added 'payments' to destructuring so we can show history
+  const { members, plans, payments, addMember, updateMember, deleteMember } = data;
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  
+  // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // New Profile Modal
+  
   const [selectedMember, setSelectedMember] = useState(null);
+  const [memberStats, setMemberStats] = useState({ totalPaid: 0, pending: 0, history: [] }); // Stats for profile
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -29,7 +35,6 @@ const Members = ({ data }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [stream, setStream] = useState(null);
 
-  // --- CAMERA FIX: Attach stream to video element when state changes ---
   useEffect(() => {
     if (isCameraOpen && videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -43,6 +48,25 @@ const Members = ({ data }) => {
     return matchesSearch && matchesStatus;
   });
 
+  // --- NEW: Handle View Profile ---
+  const handleViewProfile = (member) => {
+    // 1. Get this member's payments
+    const history = payments.filter(p => p.memberId === member.id);
+    
+    // 2. Calculate totals
+    const totalPaid = history
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        
+    const pending = history
+        .filter(p => p.status === 'pending')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+    setSelectedMember(member);
+    setMemberStats({ totalPaid, pending, history });
+    setIsProfileOpen(true);
+  };
+
   const handleOpenModal = (member = null) => {
     if (member) {
       setFormData(member);
@@ -50,13 +74,8 @@ const Members = ({ data }) => {
       setCapturedImage(member.photo || null);
     } else {
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        dob: '',
-        address: '',
-        planId: plans[0]?.id || '',
-        status: 'active',
+        name: '', email: '', phone: '', dob: '', address: '',
+        planId: plans[0]?.id || '', status: 'active',
         joinDate: new Date().toISOString().split('T')[0]
       });
       setSelectedMember(null);
@@ -72,10 +91,9 @@ const Members = ({ data }) => {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
       setIsCameraOpen(true);
-      // Note: The useEffect above handles attaching the stream to the video tag
     } catch (err) {
       console.error("Error accessing camera:", err);
-      toast({ title: "Error", description: "Could not access camera. Check permissions.", variant: "destructive" });
+      toast({ title: "Error", description: "Could not access camera.", variant: "destructive" });
     }
   };
 
@@ -93,7 +111,6 @@ const Members = ({ data }) => {
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-      
       const imageVariable = canvasRef.current.toDataURL('image/jpeg');
       setCapturedImage(imageVariable);
       setFormData(prev => ({ ...prev, photo: imageVariable }));
@@ -119,9 +136,7 @@ const Members = ({ data }) => {
       setErrors(validationErrors);
       return;
     }
-
     const memberData = { ...formData, photo: capturedImage };
-
     if (selectedMember) {
       updateMember(selectedMember.id, memberData);
       toast({ title: 'Success', description: 'Member updated successfully' });
@@ -143,6 +158,7 @@ const Members = ({ data }) => {
 
   return (
     <div className="space-y-6">
+      {/* Search & Action Bar */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <div className="flex gap-2 items-center w-full sm:w-auto">
           <div className="relative w-full sm:w-72">
@@ -150,13 +166,13 @@ const Members = ({ data }) => {
             <input
               type="text"
               placeholder="Search members..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <select
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] outline-none"
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 outline-none"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
@@ -169,12 +185,13 @@ const Members = ({ data }) => {
           <Button variant="outline" onClick={() => exportMembersToCSV(filteredMembers)} className="border-slate-300 text-slate-600 hover:bg-slate-50">
             Export CSV
           </Button>
-          <Button onClick={() => handleOpenModal()} className="bg-[#FF6B35] hover:bg-[#e65a26] text-white shadow-lg shadow-orange-500/20">
+          <Button onClick={() => handleOpenModal()} className="bg-[#FF6B35] hover:bg-[#e65a26] text-white shadow-lg">
             <Plus className="w-4 h-4 mr-2" /> Add Member
           </Button>
         </div>
       </div>
 
+      {/* Members Table */}
       <Card className="border-slate-100 shadow-md overflow-hidden">
         <Table>
           <TableHeader>
@@ -215,15 +232,17 @@ const Members = ({ data }) => {
                 <TableCell className="text-slate-600">{member.joinDate}</TableCell>
                 <TableCell>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-                    member.status === 'active' 
-                      ? 'bg-emerald-100 text-emerald-600' 
-                      : 'bg-rose-100 text-rose-600'
+                    member.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                   }`}>
                     {member.status}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {/* View Profile Button */}
+                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 hover:bg-emerald-50" onClick={() => handleViewProfile(member)}>
+                      <Eye className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-500 hover:bg-blue-50" onClick={() => handleOpenModal(member)}>
                       <Edit2 className="w-4 h-4" />
                     </Button>
@@ -238,6 +257,113 @@ const Members = ({ data }) => {
         </Table>
       </Card>
 
+      {/* --- MEMBER PROFILE MODAL --- */}
+      <Modal 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        title="Member Profile"
+        size="lg"
+      >
+        {selectedMember && (
+          <div className="space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start pb-6 border-b border-slate-100">
+               <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden border-4 border-white shadow-lg shrink-0">
+                  {selectedMember.photo ? (
+                    <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-2xl font-bold bg-slate-100">
+                      {selectedMember.name.charAt(0)}
+                    </div>
+                  )}
+               </div>
+               <div className="text-center md:text-left flex-1">
+                  <h2 className="text-2xl font-bold text-slate-800">{selectedMember.name}</h2>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start mt-2">
+                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedMember.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                        {selectedMember.status}
+                     </span>
+                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                        {plans.find(p => p.id === selectedMember.planId)?.name || 'Unknown Plan'}
+                     </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm text-slate-600">
+                     <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-slate-400" /> {selectedMember.phone}
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-slate-400" /> {selectedMember.email}
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-slate-400" /> Joined: {selectedMember.joinDate}
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-slate-400" /> {selectedMember.address || 'No Address'}
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            {/* Financial Stats */}
+            <div className="grid grid-cols-2 gap-4">
+               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <p className="text-xs font-semibold text-emerald-600 uppercase">Total Paid</p>
+                  <p className="text-2xl font-bold text-emerald-700">${memberStats.totalPaid.toFixed(2)}</p>
+               </div>
+               <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                  <p className="text-xs font-semibold text-orange-600 uppercase">Outstanding Dues</p>
+                  <p className="text-2xl font-bold text-orange-700">${memberStats.pending.toFixed(2)}</p>
+               </div>
+            </div>
+
+            {/* Payment History Table */}
+            <div>
+               <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-[#FF6B35]" /> Payment History
+               </h3>
+               <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                     <TableHeader>
+                        <TableRow className="bg-slate-50">
+                           <TableHead className="text-xs">Date</TableHead>
+                           <TableHead className="text-xs">Amount</TableHead>
+                           <TableHead className="text-xs">Method</TableHead>
+                           <TableHead className="text-xs text-right">Status</TableHead>
+                        </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                        {memberStats.history.length > 0 ? (
+                           memberStats.history.map(p => (
+                              <TableRow key={p.id}>
+                                 <TableCell className="text-xs font-medium">{p.paymentDate}</TableCell>
+                                 <TableCell className="text-xs">${parseFloat(p.amount).toFixed(2)}</TableCell>
+                                 <TableCell className="text-xs capitalize">{p.paymentMethod}</TableCell>
+                                 <TableCell className="text-xs text-right">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                       p.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                       {p.status}
+                                    </span>
+                                 </TableCell>
+                              </TableRow>
+                           ))
+                        ) : (
+                           <TableRow>
+                              <TableCell colSpan={4} className="text-center py-4 text-slate-400 text-sm">
+                                 No payment history found.
+                              </TableCell>
+                           </TableRow>
+                        )}
+                     </TableBody>
+                  </Table>
+               </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit/Add Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -246,7 +372,6 @@ const Members = ({ data }) => {
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             {/* Camera Section */}
              <div className="lg:col-span-1 flex flex-col items-center gap-4">
                 <div className="w-full aspect-[3/4] bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
                    {isCameraOpen ? (
@@ -259,10 +384,8 @@ const Members = ({ data }) => {
                          <p className="text-sm text-slate-400">No photo captured</p>
                       </div>
                    )}
-                   
                    <canvas ref={canvasRef} className="hidden" />
                 </div>
-                
                 <div className="flex gap-2 w-full">
                    {!isCameraOpen && !capturedImage && (
                       <Button type="button" onClick={startCamera} className="w-full bg-[#2C3E50] hover:bg-[#1a252f] text-white">
@@ -271,12 +394,8 @@ const Members = ({ data }) => {
                    )}
                    {isCameraOpen && (
                       <div className="flex gap-2 w-full">
-                         <Button type="button" onClick={capturePhoto} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white">
-                           Capture
-                         </Button>
-                         <Button type="button" variant="outline" onClick={stopCamera} className="bg-white">
-                           Cancel
-                         </Button>
+                         <Button type="button" onClick={capturePhoto} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white">Capture</Button>
+                         <Button type="button" variant="outline" onClick={stopCamera} className="bg-white">Cancel</Button>
                       </div>
                    )}
                    {capturedImage && (
@@ -287,69 +406,16 @@ const Members = ({ data }) => {
                 </div>
              </div>
 
-             {/* Form Fields Section */}
              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                  label="Full Name"
-                  value={formData.name || ''}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  error={errors.name}
-                  required
-                  className="bg-white border-slate-200 text-slate-900"
-                />
-                <FormInput
-                  label="Email"
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
-                  error={errors.email}
-                  required
-                  className="bg-white border-slate-200 text-slate-900"
-                />
-                <FormInput
-                  label="Phone"
-                  value={formData.phone || ''}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  error={errors.phone}
-                  required
-                  className="bg-white border-slate-200 text-slate-900"
-                />
-                <FormInput
-                  label="Date of Birth"
-                  type="date"
-                  value={formData.dob || ''}
-                  onChange={e => setFormData({...formData, dob: e.target.value})}
-                  className="bg-white border-slate-200 text-slate-900"
-                />
-                <FormInput
-                  label="Address"
-                  value={formData.address || ''}
-                  onChange={e => setFormData({...formData, address: e.target.value})}
-                  className="md:col-span-2 bg-white border-slate-200 text-slate-900"
-                />
-                <FormSelect
-                  label="Membership Plan"
-                  value={formData.planId || ''}
-                  onChange={e => setFormData({...formData, planId: e.target.value})}
-                  options={plans.map(p => ({ label: p.name, value: p.id }))}
-                  error={errors.planId}
-                  required
-                  className="bg-white border-slate-200 text-slate-900"
-                />
-                <FormSelect
-                  label="Status"
-                  value={formData.status || 'active'}
-                  onChange={e => setFormData({...formData, status: e.target.value})}
-                  options={[
-                    { label: 'Active', value: 'active' },
-                    { label: 'Inactive', value: 'inactive' }
-                  ]}
-                  required
-                  className="bg-white border-slate-200 text-slate-900"
-                />
+                <FormInput label="Full Name" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} error={errors.name} required className="bg-white border-slate-200 text-slate-900" />
+                <FormInput label="Email" type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} error={errors.email} required className="bg-white border-slate-200 text-slate-900" />
+                <FormInput label="Phone" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} error={errors.phone} required className="bg-white border-slate-200 text-slate-900" />
+                <FormInput label="Date of Birth" type="date" value={formData.dob || ''} onChange={e => setFormData({...formData, dob: e.target.value})} className="bg-white border-slate-200 text-slate-900" />
+                <FormInput label="Address" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} className="md:col-span-2 bg-white border-slate-200 text-slate-900" />
+                <FormSelect label="Membership Plan" value={formData.planId || ''} onChange={e => setFormData({...formData, planId: e.target.value})} options={plans.map(p => ({ label: p.name, value: p.id }))} error={errors.planId} required className="bg-white border-slate-200 text-slate-900" />
+                <FormSelect label="Status" value={formData.status || 'active'} onChange={e => setFormData({...formData, status: e.target.value})} options={[{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }]} required className="bg-white border-slate-200 text-slate-900" />
              </div>
           </div>
-
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={handleModalClose} className="border-slate-300 text-slate-700">Cancel</Button>
             <Button type="submit" className="bg-[#FF6B35] hover:bg-[#e65a26] text-white">Save Member</Button>
