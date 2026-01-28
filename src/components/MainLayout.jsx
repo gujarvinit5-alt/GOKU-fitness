@@ -1,168 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, Users, Calendar, CreditCard, PieChart, MessageSquare, 
-  FileText, TrendingUp, Receipt, Search, Bell, Moon, Sun, Menu, LogOut, Settings 
-} from 'lucide-react';
+import React from 'react';
+import Navigation from './Navigation';
+import Footer from './Footer';
+import { User, Bell, Search, ChevronDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Sidebar Menu Items
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'members', label: 'Members', icon: Users },
-    { id: 'plans', label: 'Membership Plans', icon: FileText },
-    { id: 'attendance', label: 'Attendance', icon: Calendar },
-    { id: 'billing', label: 'Billing & Payments', icon: CreditCard },
-    { id: 'expenses', label: 'Expenses', icon: Receipt },
-    { id: 'inquiries', label: 'Inquiries', icon: FileText },
-    { id: 'sms', label: 'SMS Notifications', icon: MessageSquare },
-    { id: 'reports', label: 'Reports', icon: TrendingUp }, // Points to your new Reports page
-    { id: 'profile', label: 'Gym Profile', icon: Settings },
-  ];
-
-  // --- Dark Mode Logic ---
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
+const MainLayout = ({ children, activeTab, onTabChange, gymProfile }) => {
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+    <div className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-[#1A1A1A]">
+      <Navigation activeTab={activeTab} onTabChange={onTabChange} />
       
-      {/* --- SIDEBAR --- */}
-      <aside 
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        } bg-[#1A1A1A] text-white transition-all duration-300 flex flex-col z-20 shrink-0 shadow-xl`}
-      >
-        {/* Logo Area */}
-        <div className="h-16 flex items-center px-4 border-b border-gray-800">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF6B35] to-orange-600 flex items-center justify-center shrink-0 shadow-lg shadow-orange-900/50">
-             <span className="font-bold text-white">GF</span>
-          </div>
-          {isSidebarOpen && (
-            <span className="ml-3 font-bold text-lg tracking-wide animate-in fade-in duration-300">
-              GOKU <span className="text-[#FF6B35]">FITNESS</span>
-            </span>
-          )}
-        </div>
-
-        {/* Navigation Links */}
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200 group relative ${
-                  isActive 
-                    ? 'bg-[#FF6B35] text-white shadow-lg shadow-orange-900/20' 
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
-                {isSidebarOpen && (
-                  <span className="ml-3 font-medium text-sm animate-in fade-in slide-in-from-left-2 duration-300">
-                    {item.label}
-                  </span>
-                )}
-                {/* Tooltip for collapsed mode */}
-                {!isSidebarOpen && (
-                  <div className="absolute left-14 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                    {item.label}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-800">
-          <button className="w-full flex items-center px-3 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-             <LogOut className="w-5 h-5" />
-             {isSidebarOpen && <span className="ml-3 font-medium text-sm">Logout</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* --- MAIN CONTENT WRAPPER --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        
-        {/* --- INTERACTIVE HEADER --- */}
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 shrink-0 transition-colors z-10">
-           
-           {/* Left: Sidebar Toggle & Page Title */}
-           <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-                className="p-2 -ml-2 text-slate-500 hover:text-[#FF6B35] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                 <Menu className="w-6 h-6" />
-              </button>
-              <h1 className="text-xl font-bold text-slate-800 dark:text-white capitalize hidden md:block">
-                 {activeTab.replace('-', ' ')}
-              </h1>
-           </div>
+        {/* Background Pattern */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+             style={{
+               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231A1A1A' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+             }}
+        />
 
-           {/* Center: Search Bar */}
-           <div className="flex-1 max-w-md mx-4 hidden md:block relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#FF6B35] transition-colors" />
+        {/* Header */}
+        <header className="h-20 bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-100 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-[#1A1A1A] capitalize tracking-tight flex items-center gap-2">
+              <span className="w-2 h-8 bg-[#FF6B35] rounded-full inline-block"></span>
+              {activeTab.replace('-', ' ')}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
-                 className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-full text-sm focus:ring-2 focus:ring-[#FF6B35] dark:text-white transition-all outline-none placeholder:text-slate-400"
-                 placeholder="Quick Search (Members, Payments)..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
+                type="text" 
+                placeholder="Quick Search..." 
+                className="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm border-none focus:ring-2 focus:ring-[#FF6B35] w-64 transition-all"
               />
-           </div>
+            </div>
 
-           {/* Right: Actions */}
-           <div className="flex items-center gap-2 md:gap-4">
-              {/* Dark Mode Toggle */}
-              <button 
-                onClick={() => setDarkMode(!darkMode)} 
-                className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-                title="Toggle Dark Mode"
-              >
-                 {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
-              </button>
-
-              {/* Notification Bell */}
-              <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative transition-colors">
-                 <Bell className="w-5 h-5" />
-                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900 animate-pulse"></span>
-              </button>
-
-              {/* Profile Section */}
-              <div className="flex items-center gap-3 ml-2 border-l pl-4 border-slate-200 dark:border-slate-700">
-                 <div className="text-right hidden md:block">
-                    <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">
-                      {gymProfile?.name || 'Admin'}
-                    </p>
-                    <p className="text-[10px] text-[#FF6B35] font-bold uppercase tracking-wider mt-0.5">
-                      Admin Access
-                    </p>
-                 </div>
-                 <div className="w-9 h-9 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold cursor-pointer hover:bg-[#FF6B35] ring-2 ring-offset-2 ring-transparent hover:ring-[#FF6B35] transition-all">
-                    {gymProfile?.name?.charAt(0) || 'A'}
-                 </div>
+            <button className="relative p-2.5 rounded-full bg-slate-50 hover:bg-orange-50 transition-colors text-slate-600 hover:text-[#FF6B35]">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2.5 w-2 h-2 bg-[#FF6B35] rounded-full ring-2 ring-white"></span>
+            </button>
+            
+            <div className="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer group">
+              <div className="text-right hidden sm:block group-hover:opacity-80 transition-opacity">
+                <p className="text-sm font-bold text-[#1A1A1A]">{gymProfile?.name || 'GOKU Gym'}</p>
+                <p className="text-xs text-[#FF6B35] font-semibold">Admin Access</p>
               </div>
-           </div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1A1A1A] to-[#333] flex items-center justify-center border-2 border-[#FF6B35] shadow-lg overflow-hidden">
+                {gymProfile?.logo ? (
+                   <img src={gymProfile.logo} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-white" />
+                )}
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-[#FF6B35]" />
+            </div>
+          </div>
         </header>
 
-        {/* --- PAGE CONTENT AREA --- */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 relative scroll-smooth">
-           {children}
+        <main className="flex-1 overflow-auto p-8 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent relative z-0">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="max-w-7xl mx-auto pb-10"
+          >
+            {children}
+          </motion.div>
+          <Footer />
         </main>
-
       </div>
     </div>
   );
