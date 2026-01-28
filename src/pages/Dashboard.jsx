@@ -1,42 +1,84 @@
-import React from 'react';
-import { Users, DollarSign, TrendingUp, Calendar, CreditCard, Activity, AlertCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, DollarSign, TrendingUp, AlertCircle, Clock, CreditCard } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { LineChart, BarChart } from '@/components/ChartComponents';
 import { Button } from '@/components/ui/button';
 
 const Dashboard = ({ data, setActiveTab }) => {
   const { members, payments, expenses } = data;
-  
-  const activeMembers = members.filter(m => m.status === 'active').length;
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
-  const currentMonthRevenue = payments
-    .filter(p => {
-      const d = new Date(p.paymentDate);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear && p.status === 'paid';
-    })
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  const [dateFilter, setDateFilter] = useState('This Month'); // Default filter
+
+  // --- Helper Functions for Date Filtering ---
+  const isSameDay = (d1, d2) => 
+    d1.getDate() === d2.getDate() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getFullYear() === d2.getFullYear();
+
+  const isThisWeek = (date) => {
+    const today = new Date();
+    const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
+    return date >= firstDay;
+  };
+
+  const isSameMonth = (d1, d2) => 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getFullYear() === d2.getFullYear();
+
+  const isSameYear = (d1, d2) => 
+    d1.getFullYear() === d2.getFullYear();
+
+  // --- Calculate Stats Based on Filter ---
+  const getFilteredStats = () => {
+    const now = new Date();
     
-  const currentMonthExpenses = expenses
-    .filter(e => {
-      const d = new Date(e.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    })
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    // Filter Payments (Revenue)
+    const filteredPayments = payments.filter(p => {
+      const pDate = new Date(p.paymentDate);
+      if (p.status !== 'paid') return false;
+      
+      if (dateFilter === 'Today') return isSameDay(pDate, now);
+      if (dateFilter === 'This Week') return isThisWeek(pDate);
+      if (dateFilter === 'This Month') return isSameMonth(pDate, now);
+      if (dateFilter === 'Year to Date') return isSameYear(pDate, now);
+      return true;
+    });
 
-  const profit = currentMonthRevenue - currentMonthExpenses;
+    // Filter Expenses
+    const filteredExpenses = expenses.filter(e => {
+      const eDate = new Date(e.date);
+      if (dateFilter === 'Today') return isSameDay(eDate, now);
+      if (dateFilter === 'This Week') return isThisWeek(eDate);
+      if (dateFilter === 'This Month') return isSameMonth(eDate, now);
+      if (dateFilter === 'Year to Date') return isSameYear(eDate, now);
+      return true;
+    });
 
-  // Pending Payments logic
+    const revenue = filteredPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    const expenseTotal = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    
+    return { revenue, expenseTotal, profit: revenue - expenseTotal };
+  };
+
+  const { revenue, profit } = getFilteredStats();
+  
+  // Static Counts (Not affected by date filter usually, or you can adjust if needed)
+  const activeMembers = members.filter(m => m.status === 'active').length;
   const pendingPaymentsCount = payments.filter(p => p.status === 'pending').length;
 
   return (
     <div className="space-y-8">
-      {/* Quick Filters - Visual Only for Dashboard */}
+      {/* Quick Filters - Now Interactive */}
       <div className="flex gap-4 overflow-x-auto pb-2">
-         {['Today', 'This Week', 'This Month', 'Year to Date'].map((filter, i) => (
-            <button key={filter} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${i === 2 ? 'bg-[#1A1A1A] text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}>
+         {['Today', 'This Week', 'This Month', 'Year to Date'].map((filter) => (
+            <button 
+              key={filter} 
+              onClick={() => setDateFilter(filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                dateFilter === filter 
+                ? 'bg-[#1A1A1A] text-white shadow-lg' 
+                : 'bg-white text-slate-600 hover:bg-slate-100'
+              }`}
+            >
                {filter}
             </button>
          ))}
@@ -50,11 +92,11 @@ const Dashboard = ({ data, setActiveTab }) => {
           icon={Users}
           color="orange"
           trend="up"
-          trendValue="+12%"
+          trendValue="Total"
         />
         <StatCard
-          title="Monthly Revenue"
-          value={`$${currentMonthRevenue.toFixed(0)}`}
+          title={`${dateFilter} Revenue`} // Updates title based on filter
+          value={`$${revenue.toFixed(0)}`}
           icon={DollarSign}
           color="green"
           trend="up"
@@ -69,7 +111,7 @@ const Dashboard = ({ data, setActiveTab }) => {
           trendValue="Needs Attention"
         />
         <StatCard
-          title="Net Profit"
+          title={`${dateFilter} Profit`} // Updates title based on filter
           value={`$${profit.toFixed(0)}`}
           icon={TrendingUp}
           color="blue"
@@ -84,7 +126,6 @@ const Dashboard = ({ data, setActiveTab }) => {
               <CardTitle className="text-[#1A1A1A]">Financial Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Placeholder for chart to ensure it renders with new styling */}
               <div className="h-64 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                  <p className="text-slate-400">Chart Component (Revenue vs Expenses)</p>
               </div>
@@ -96,7 +137,6 @@ const Dashboard = ({ data, setActiveTab }) => {
         <div className="space-y-8">
           {/* Quick Actions */}
           <Card className="bg-gradient-to-br from-[#1A1A1A] to-[#333] text-white border-none shadow-xl relative overflow-hidden">
-             {/* Decorative element */}
              <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B35] opacity-10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
              
              <CardHeader>

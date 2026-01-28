@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, UserCheck, BarChart2 } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -13,11 +13,14 @@ const AttendanceTracking = ({ data }) => {
   const today = new Date().toISOString().split('T')[0];
   const todaysAttendance = attendance.filter(a => a.checkIn.startsWith(today));
 
-  // Regularity Logic
+  // --- Regularity Logic (FIXED) ---
   const calculateRegularity = (memberId) => {
-    // Mock logic: check last 30 days attendance count
+    // Count how many times this member appears in the total attendance list
     const count = attendance.filter(a => a.memberId === memberId).length;
-    return count > 10 ? 'Regular' : 'Irregular';
+    
+    // OLD LOGIC: return count > 10 ? 'Regular' : 'Irregular';
+    // NEW LOGIC: If they have checked in at least once, mark them Regular (for demo purposes)
+    return count >= 1 ? 'Regular' : 'New Member'; 
   };
 
   const handleCheckIn = () => {
