@@ -1,29 +1,20 @@
 import React, { useState } from 'react';
-import { Plus, Search, Trash2, Download, AlertTriangle } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Plus, Search, Download, FileDown } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { FormInput, FormSelect, FormTextarea } from '@/components/ui/form-input';
+import { FormInput, FormSelect } from '@/components/ui/form-input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { validatePaymentForm } from '@/utils/ValidationUtils';
 
 const BillingPayment = ({ data }) => {
-  const { payments, members, addPayment } = data;
+  const { payments, members, addPayment, updatePayment } = data; // Added updatePayment
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
-
-  // Auto-pending logic simulation
-  // Check active members with expiry in < 7 days and NO payment for future
-  const upcomingExpirations = members.filter(m => {
-     if (m.status !== 'active') return false;
-     // Mock expiry check based on joinDate + duration (assuming 1 month default for simplicity if no expiry field)
-     // In real app, we'd check actual 'expiryDate' field
-     return false; 
-  });
 
   const filteredPayments = payments.filter(p => {
      const member = members.find(m => m.id === p.memberId);
@@ -46,6 +37,46 @@ const BillingPayment = ({ data }) => {
        setIsModalOpen(false);
        toast({title: 'Success', description: 'Payment recorded'});
     }
+  };
+
+  // --- NEW: Toggle Status Function ---
+  const toggleStatus = (paymentId, currentStatus) => {
+    const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
+    // This assumes you have an updatePayment function in your useGymData hook. 
+    // If not, we can just mock it for UI for now, but updatePayment is better.
+    if (updatePayment) {
+        updatePayment(paymentId, { status: newStatus });
+        toast({ title: "Updated", description: `Marked as ${newStatus}` });
+    } else {
+        console.warn("updatePayment function missing from props");
+    }
+  };
+
+  // --- NEW: Export CSV Function ---
+  const handleExport = () => {
+    const headers = ['Invoice', 'Member Name', 'Date', 'Amount', 'Status', 'Method'];
+    const rows = filteredPayments.map(p => {
+        const m = members.find(mem => mem.id === p.memberId);
+        return [
+            p.invoiceNumber,
+            m ? m.name : 'Unknown',
+            p.paymentDate,
+            p.amount,
+            p.status,
+            p.paymentMethod
+        ];
+    });
+
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `payments_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   };
 
   return (
@@ -72,9 +103,14 @@ const BillingPayment = ({ data }) => {
                <option value="overdue">Overdue</option>
             </select>
          </div>
-         <Button onClick={handleOpenModal} className="bg-[#FF6B35] hover:bg-[#E85D2E] text-white">
-            <Plus className="w-4 h-4 mr-2" /> New Payment
-         </Button>
+         <div className="flex gap-2">
+             <Button variant="outline" onClick={handleExport} className="bg-white text-slate-700 hover:bg-slate-50">
+                <FileDown className="w-4 h-4 mr-2" /> Export CSV
+             </Button>
+             <Button onClick={handleOpenModal} className="bg-[#FF6B35] hover:bg-[#E85D2E] text-white">
+                <Plus className="w-4 h-4 mr-2" /> New Payment
+             </Button>
+         </div>
       </div>
 
       <Card className="border-none shadow-lg bg-white overflow-hidden">
@@ -99,11 +135,15 @@ const BillingPayment = ({ data }) => {
                         <TableCell className="text-slate-600">{payment.paymentDate}</TableCell>
                         <TableCell className="font-bold text-[#1A1A1A]">${parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>
-                           <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${
-                              payment.status === 'paid' ? 'bg-green-100 text-green-700' : 
-                              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
-                           }`}>
+                           {/* Clickable Badge to Toggle Status */}
+                           <span 
+                             onClick={() => toggleStatus(payment.id, payment.status)}
+                             className={`px-2 py-1 rounded-md text-xs font-bold uppercase cursor-pointer select-none transition-opacity hover:opacity-80 ${
+                               payment.status === 'paid' ? 'bg-green-100 text-green-700' : 
+                               payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                               'bg-red-100 text-red-700'
+                             }`}
+                           >
                               {payment.status}
                            </span>
                         </TableCell>

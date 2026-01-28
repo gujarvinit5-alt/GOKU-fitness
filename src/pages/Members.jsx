@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, Camera, RefreshCw, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Search, Edit2, Trash2, Camera, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -28,6 +28,13 @@ const Members = ({ data }) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [stream, setStream] = useState(null);
+
+  // --- CAMERA FIX: Attach stream to video element when state changes ---
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [isCameraOpen, stream]);
 
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,13 +71,11 @@ const Members = ({ data }) => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
       setIsCameraOpen(true);
+      // Note: The useEffect above handles attaching the stream to the video tag
     } catch (err) {
       console.error("Error accessing camera:", err);
-      toast({ title: "Error", description: "Could not access camera", variant: "destructive" });
+      toast({ title: "Error", description: "Could not access camera. Check permissions.", variant: "destructive" });
     }
   };
 
@@ -85,7 +90,6 @@ const Members = ({ data }) => {
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
-      // Set canvas dimensions to match video
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -246,7 +250,7 @@ const Members = ({ data }) => {
              <div className="lg:col-span-1 flex flex-col items-center gap-4">
                 <div className="w-full aspect-[3/4] bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative group">
                    {isCameraOpen ? (
-                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
                    ) : capturedImage ? (
                       <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
                    ) : (
@@ -256,7 +260,6 @@ const Members = ({ data }) => {
                       </div>
                    )}
                    
-                   {/* Hidden canvas for capture */}
                    <canvas ref={canvasRef} className="hidden" />
                 </div>
                 
@@ -269,10 +272,10 @@ const Members = ({ data }) => {
                    {isCameraOpen && (
                       <div className="flex gap-2 w-full">
                          <Button type="button" onClick={capturePhoto} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white">
-                            Capture
+                           Capture
                          </Button>
                          <Button type="button" variant="outline" onClick={stopCamera} className="bg-white">
-                            Cancel
+                           Cancel
                          </Button>
                       </div>
                    )}
