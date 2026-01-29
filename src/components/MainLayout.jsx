@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import Navigation from './Navigation';
 import Footer from './Footer';
 import { 
-  User, Bell, Search, ChevronDown, Moon, Sun, Settings, LogOut, Upload, Shield, 
-  AlertCircle, FileClock, X, CreditCard, Phone, ArrowRight 
+  User, Bell, Search, ChevronDown, Moon, Sun, Settings, LogOut, Upload, 
+  Shield, AlertCircle, FileClock, X, CreditCard, Phone, ArrowRight, HelpCircle, Building
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
@@ -104,10 +104,17 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   };
 
   // --- 4. Navigation Helper ---
-  const handleSearchResultClick = (tab) => {
+  const handleSearchResultClick = (tab, id) => {
+    // Navigate to the tab
     onTabChange(tab);
+    
+    // In a real app with routing, we would navigate to /members/:id
+    // For now, we simulate the navigation and clear search
     setShowSearchDropdown(false);
     setSearchQuery('');
+    
+    // Optional: You could dispatch a custom event here if you wanted to auto-open the modal
+    // window.dispatchEvent(new CustomEvent('open-member', { detail: id }));
   };
 
   // Dark Mode Effect
@@ -180,7 +187,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                                   {searchResults.members.map(m => (
                                      <div 
                                         key={m.id} 
-                                        onClick={() => handleSearchResultClick('members')}
+                                        onClick={() => handleSearchResultClick('members', m.id)}
                                         className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
                                      >
                                         <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold dark:text-white">
@@ -203,7 +210,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                                   {searchResults.payments.map(p => (
                                      <div 
                                         key={p.id} 
-                                        onClick={() => handleSearchResultClick('billing')}
+                                        onClick={() => handleSearchResultClick('billing', p.id)}
                                         className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
                                      >
                                         <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
@@ -306,13 +313,16 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                       </div>
                    </div>
 
-                   {/* Menu Options */}
+                   {/* Menu Options (Professional Standard) */}
                    <div className="space-y-1">
                       <button onClick={() => { onTabChange('profile'); setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <User className="w-4 h-4 mr-3" /> Profile Settings
+                         <User className="w-4 h-4 mr-3" /> My Profile
                       </button>
                       <button onClick={() => { onTabChange('profile'); setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <Shield className="w-4 h-4 mr-3" /> Account Settings
+                         <Building className="w-4 h-4 mr-3" /> Gym Settings
+                      </button>
+                      <button onClick={() => { setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                         <HelpCircle className="w-4 h-4 mr-3" /> Help & Support
                       </button>
                       <button onClick={() => setDarkMode(!darkMode)} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
                          {darkMode ? <Sun className="w-4 h-4 mr-3" /> : <Moon className="w-4 h-4 mr-3" />} 
