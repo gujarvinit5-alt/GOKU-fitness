@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navigation from './Navigation';
 import Footer from './Footer';
-import { User, Bell, Search, ChevronDown, Moon, Sun, Settings, LogOut, Upload, Shield, AlertCircle, FileClock, X, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { 
+  User, Bell, Search, ChevronDown, Moon, Sun, Settings, LogOut, Upload, Shield, 
+  AlertCircle, FileClock, X, CreditCard, Phone, ArrowRight 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
 const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({ members: [], payments: [] });
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   
   // Dropdown States
   const [showNotifications, setShowNotifications] = useState(false);
@@ -18,7 +23,34 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   const fileInputRef = useRef(null);
   const { toast } = useToast();
 
-  // --- 1. Notification Logic ---
+  // --- 1. REAL TIME SEARCH LOGIC ---
+  useEffect(() => {
+    if (!searchQuery.trim() || !data) {
+      setSearchResults({ members: [], payments: [] });
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+
+    // Search Members (Name, Phone, Email)
+    const foundMembers = data.members?.filter(m => 
+      m.name.toLowerCase().includes(lowerQuery) || 
+      m.phone.includes(lowerQuery) ||
+      m.email.toLowerCase().includes(lowerQuery)
+    ).slice(0, 3) || [];
+
+    // Search Payments (by Member Name match)
+    const foundPayments = data.payments?.filter(p => {
+       const member = data.members?.find(m => m.id === p.memberId);
+       return member?.name.toLowerCase().includes(lowerQuery);
+    }).slice(0, 3) || [];
+
+    setSearchResults({ members: foundMembers, payments: foundPayments });
+    setShowSearchDropdown(true);
+  }, [searchQuery, data]);
+
+  // --- 2. Notification Logic ---
   const getNotifications = () => {
     if (!data) return [];
     const alerts = [];
@@ -57,7 +89,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   };
   const notifications = getNotifications();
 
-  // --- 2. Photo Upload Logic ---
+  // --- 3. Photo Upload ---
   const handlePhotoUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -71,7 +103,14 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
     }
   };
 
-  // --- 3. Dark Mode Effect ---
+  // --- 4. Navigation Helper ---
+  const handleSearchResultClick = (tab) => {
+    onTabChange(tab);
+    setShowSearchDropdown(false);
+    setSearchQuery('');
+  };
+
+  // Dark Mode Effect
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
@@ -80,7 +119,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   return (
     <div className="flex h-screen bg-[#F8F9FA] dark:bg-slate-900 overflow-hidden font-sans text-[#1A1A1A] transition-colors duration-300">
       
-      {/* SIDEBAR NAVIGATION (UNTOUCHED) */}
+      {/* SIDEBAR (Kept exactly as requested) */}
       <Navigation activeTab={activeTab} onTabChange={onTabChange} />
       
       <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -91,7 +130,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
              }}
         />
 
-        {/* HEADER (UPDATED) */}
+        {/* HEADER */}
         <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0 transition-colors">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-[#1A1A1A] dark:text-white capitalize tracking-tight flex items-center gap-2">
@@ -102,22 +141,94 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
           
           <div className="flex items-center gap-6">
             
-            {/* Interactive Search */}
-            <div className="relative hidden md:block group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#FF6B35]" />
-              <input 
-                type="text" 
-                placeholder="Quick Search..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-full text-sm border-none focus:ring-2 focus:ring-[#FF6B35] w-64 transition-all outline-none"
-              />
+            {/* --- INTERACTIVE SEARCH BAR --- */}
+            <div className="relative hidden md:block group z-50">
+              <div className="relative">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#FF6B35]" />
+                 <input 
+                   type="text" 
+                   placeholder="Quick Search (Member, Phone)..." 
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   onFocus={() => { if(searchQuery) setShowSearchDropdown(true); }}
+                   className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-full text-sm border-none focus:ring-2 focus:ring-[#FF6B35] w-72 transition-all outline-none"
+                 />
+                 {searchQuery && (
+                    <button onClick={() => { setSearchQuery(''); setShowSearchDropdown(false); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+                       <X className="w-3 h-3 text-slate-400 hover:text-slate-600" />
+                    </button>
+                 )}
+              </div>
+
+              {/* SEARCH RESULTS DROPDOWN */}
+              <AnimatePresence>
+                {showSearchDropdown && (searchQuery.trim().length > 0) && (
+                   <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-12 left-0 w-80 bg-white dark:bg-slate-900 shadow-xl rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden"
+                   >
+                      {searchResults.members.length === 0 && searchResults.payments.length === 0 ? (
+                         <div className="p-4 text-center text-slate-400 text-sm">No results found.</div>
+                      ) : (
+                         <div className="max-h-[400px] overflow-y-auto">
+                            {/* Member Results */}
+                            {searchResults.members.length > 0 && (
+                               <div className="p-2">
+                                  <p className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Members</p>
+                                  {searchResults.members.map(m => (
+                                     <div 
+                                        key={m.id} 
+                                        onClick={() => handleSearchResultClick('members')}
+                                        className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
+                                     >
+                                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold dark:text-white">
+                                           {m.name.charAt(0)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                           <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{m.name}</p>
+                                           <p className="text-xs text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</p>
+                                        </div>
+                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover/item:text-[#FF6B35]" />
+                                     </div>
+                                  ))}
+                               </div>
+                            )}
+
+                            {/* Payment Results */}
+                            {searchResults.payments.length > 0 && (
+                               <div className="p-2 border-t border-slate-100 dark:border-slate-800">
+                                  <p className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Payments</p>
+                                  {searchResults.payments.map(p => (
+                                     <div 
+                                        key={p.id} 
+                                        onClick={() => handleSearchResultClick('billing')}
+                                        className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
+                                     >
+                                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                           <CreditCard className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                           <p className="text-sm font-semibold text-slate-800 dark:text-white">${p.amount}</p>
+                                           <p className="text-xs text-slate-400 capitalize">{p.status}</p>
+                                        </div>
+                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover/item:text-[#FF6B35]" />
+                                     </div>
+                                  ))}
+                               </div>
+                            )}
+                         </div>
+                      )}
+                   </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Notification Dropdown */}
+            {/* Notification Bell */}
             <div className="relative">
               <button 
-                onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
+                onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); setShowSearchDropdown(false); }}
                 className="relative p-2.5 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300 hover:text-[#FF6B35]"
               >
                 <Bell className="w-5 h-5" />
@@ -132,7 +243,10 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                    </div>
                    <div className="max-h-[350px] overflow-y-auto p-2 space-y-1">
                       {notifications.length === 0 ? (
-                         <div className="text-center text-slate-400 text-xs py-6">All caught up!</div>
+                         <div className="text-center text-slate-400 text-xs py-6 flex flex-col items-center">
+                            <CheckCircle2 className="w-8 h-8 mb-2 text-slate-200" />
+                            All caught up!
+                         </div>
                       ) : (
                          notifications.map((n) => (
                             <div key={n.id} className={`p-3 rounded-lg flex gap-3 ${n.type === 'alert' ? 'bg-red-50 dark:bg-red-900/10' : 'bg-orange-50 dark:bg-orange-900/10'}`}>
@@ -152,7 +266,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
             {/* Profile Dropdown */}
             <div className="relative">
               <div 
-                onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
+                onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); setShowSearchDropdown(false); }}
                 className="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-slate-700 cursor-pointer group select-none"
               >
                 <div className="text-right hidden sm:block group-hover:opacity-80 transition-opacity">
@@ -171,11 +285,11 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                 <ChevronDown className={`w-4 h-4 text-slate-400 group-hover:text-[#FF6B35] transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
               </div>
 
-              {/* Profile Menu */}
+              {/* Profile Menu Dropdown */}
               {showProfileMenu && (
                 <div className="absolute top-14 right-0 w-64 bg-white dark:bg-slate-900 shadow-xl rounded-xl border border-slate-100 dark:border-slate-800 p-2 z-50 animate-in fade-in slide-in-from-top-2">
                    
-                   {/* Photo Upload Header */}
+                   {/* Photo Upload */}
                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 mb-2">
                       <div className="relative group/photo cursor-pointer w-12 h-12" onClick={() => fileInputRef.current.click()}>
                          <div className="w-full h-full rounded-full bg-slate-200 overflow-hidden border border-slate-300">
@@ -219,7 +333,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
 
         <main 
           className="flex-1 overflow-auto p-8 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent relative z-0"
-          onClick={() => { setShowNotifications(false); setShowProfileMenu(false); }}
+          onClick={() => { setShowNotifications(false); setShowProfileMenu(false); setShowSearchDropdown(false); }}
         >
           <motion.div
             key={activeTab}
