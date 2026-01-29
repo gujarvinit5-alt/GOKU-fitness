@@ -3,7 +3,7 @@ import Navigation from './Navigation';
 import Footer from './Footer';
 import { 
   User, Bell, Search, ChevronDown, Moon, Sun, Settings, LogOut, Upload, 
-  Shield, AlertCircle, FileClock, X, CreditCard, Phone, ArrowRight, HelpCircle, Building
+  Shield, AlertCircle, FileClock, X, CreditCard, Phone, Eye, Mail, HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
@@ -104,17 +104,10 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
   };
 
   // --- 4. Navigation Helper ---
-  const handleSearchResultClick = (tab, id) => {
-    // Navigate to the tab
+  const handleSearchResultClick = (tab) => {
     onTabChange(tab);
-    
-    // In a real app with routing, we would navigate to /members/:id
-    // For now, we simulate the navigation and clear search
     setShowSearchDropdown(false);
     setSearchQuery('');
-    
-    // Optional: You could dispatch a custom event here if you wanted to auto-open the modal
-    // window.dispatchEvent(new CustomEvent('open-member', { detail: id }));
   };
 
   // Dark Mode Effect
@@ -180,15 +173,14 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                          <div className="p-4 text-center text-slate-400 text-sm">No results found.</div>
                       ) : (
                          <div className="max-h-[400px] overflow-y-auto">
-                            {/* Member Results */}
+                            {/* Member Results with EYE Icon */}
                             {searchResults.members.length > 0 && (
                                <div className="p-2">
                                   <p className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Members</p>
                                   {searchResults.members.map(m => (
                                      <div 
                                         key={m.id} 
-                                        onClick={() => handleSearchResultClick('members', m.id)}
-                                        className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
+                                        className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group/item transition-colors"
                                      >
                                         <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold dark:text-white">
                                            {m.name.charAt(0)}
@@ -197,7 +189,14 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                                            <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{m.name}</p>
                                            <p className="text-xs text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</p>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover/item:text-[#FF6B35]" />
+                                        {/* VIEW PROFILE EYE BUTTON */}
+                                        <button 
+                                          onClick={() => handleSearchResultClick('members')}
+                                          className="p-2 text-slate-400 hover:text-[#FF6B35] hover:bg-orange-50 dark:hover:bg-slate-700 rounded-full transition-all"
+                                          title="View Profile"
+                                        >
+                                           <Eye className="w-4 h-4" />
+                                        </button>
                                      </div>
                                   ))}
                                </div>
@@ -210,7 +209,7 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                                   {searchResults.payments.map(p => (
                                      <div 
                                         key={p.id} 
-                                        onClick={() => handleSearchResultClick('billing', p.id)}
+                                        onClick={() => handleSearchResultClick('billing')}
                                         className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer group/item"
                                      >
                                         <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
@@ -220,7 +219,6 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                                            <p className="text-sm font-semibold text-slate-800 dark:text-white">${p.amount}</p>
                                            <p className="text-xs text-slate-400 capitalize">{p.status}</p>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover/item:text-[#FF6B35]" />
                                      </div>
                                   ))}
                                </div>
@@ -313,21 +311,32 @@ const MainLayout = ({ children, activeTab, onTabChange, gymProfile, data }) => {
                       </div>
                    </div>
 
-                   {/* Menu Options (Professional Standard) */}
+                   {/* Menu Options (Updated Selection) */}
                    <div className="space-y-1">
                       <button onClick={() => { onTabChange('profile'); setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <User className="w-4 h-4 mr-3" /> My Profile
-                      </button>
-                      <button onClick={() => { onTabChange('profile'); setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <Building className="w-4 h-4 mr-3" /> Gym Settings
-                      </button>
-                      <button onClick={() => { setShowProfileMenu(false); }} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <HelpCircle className="w-4 h-4 mr-3" /> Help & Support
+                         <Settings className="w-4 h-4 mr-3" /> Account Settings
                       </button>
                       <button onClick={() => setDarkMode(!darkMode)} className="w-full flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
                          {darkMode ? <Sun className="w-4 h-4 mr-3" /> : <Moon className="w-4 h-4 mr-3" />} 
                          {darkMode ? 'Light Mode' : 'Dark Mode'}
                       </button>
+                   </div>
+
+                   {/* Help & Support Section (Updated with Info) */}
+                   <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                        <HelpCircle className="w-3 h-3" /> Support
+                      </p>
+                      <div className="space-y-1.5">
+                         <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                            <Mail className="w-3 h-3 text-[#FF6B35]" /> 
+                            <span className="truncate">vinitgujar13@gmail.com</span>
+                         </div>
+                         <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                            <Phone className="w-3 h-3 text-[#FF6B35]" /> 
+                            <span>7666808559</span>
+                         </div>
+                      </div>
                    </div>
                    
                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
