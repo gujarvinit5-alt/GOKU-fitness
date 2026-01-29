@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { validateMemberForm } from '@/utils/ValidationUtils';
 import { exportMembersToCSV } from '@/utils/ExportUtils';
 
-// Added memberIdToView and setMemberIdToView props
 const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, setMemberIdToView }) => {
   const { members, plans, payments, addMember, updateMember, deleteMember } = data;
   const { toast } = useToast();
@@ -47,9 +46,8 @@ const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, se
     if (memberIdToView && members.length > 0) {
       const foundMember = members.find(m => m.id === memberIdToView);
       if (foundMember) {
-        // Slight delay to ensure UI is ready
         setTimeout(() => handleViewProfile(foundMember), 100);
-        if (setMemberIdToView) setMemberIdToView(null); // Reset
+        if (setMemberIdToView) setMemberIdToView(null);
       }
     }
   }, [memberIdToView, members]);
@@ -78,6 +76,9 @@ const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, se
   };
 
   const handleOpenModal = (member = null) => {
+    // If opening from Profile View, close Profile View first
+    if (isProfileOpen) setIsProfileOpen(false);
+
     if (member) {
       setFormData(member);
       setSelectedMember(member);
@@ -264,11 +265,22 @@ const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, se
         </Table>
       </Card>
 
-      {/* --- MEMBER PROFILE MODAL --- */}
+      {/* --- MEMBER PROFILE VIEW MODAL --- */}
       <Modal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} title="Member Profile" size="lg">
         {selectedMember && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start pb-6 border-b border-slate-100">
+          <div className="space-y-6 relative">
+            
+            {/* NEW: Edit Button inside Profile View */}
+            <div className="absolute top-0 right-0">
+               <Button 
+                 onClick={() => handleOpenModal(selectedMember)} 
+                 className="bg-[#FF6B35] hover:bg-[#e65a26] text-white text-xs h-8 px-3 shadow-md"
+               >
+                 <Edit2 className="w-3 h-3 mr-2" /> Edit Profile
+               </Button>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start pb-6 border-b border-slate-100 mt-2">
                <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden border-4 border-white shadow-lg shrink-0">
                   {selectedMember.photo ? (
                     <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-cover" />
@@ -362,6 +374,7 @@ const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, se
         )}
       </Modal>
 
+      {/* --- EDIT / ADD MODAL --- */}
       <Modal isOpen={isModalOpen} onClose={handleModalClose} title={selectedMember ? 'Edit Member Details' : 'Register New Member'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
