@@ -19,12 +19,41 @@ import SMSNotifications from '@/pages/SMSNotifications';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // State for Auto-Opening Modals
+  const [shouldOpenAddMember, setShouldOpenAddMember] = useState(false);
+  const [memberIdToView, setMemberIdToView] = useState(null); // <--- NEW: Track which profile to open
+  
   const gymData = useGymData();
+
+  // Handle navigation from Dashboard
+  const handleNavigate = (tab, action) => {
+    setActiveTab(tab);
+    if (tab === 'members' && action === 'add') {
+      setShouldOpenAddMember(true);
+    }
+  };
+
+  // Handle viewing a specific member from Search
+  const handleViewMember = (id) => {
+    setActiveTab('members');
+    setMemberIdToView(id);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard data={gymData} setActiveTab={setActiveTab} />;
-      case 'members': return <Members data={gymData} />;
+      case 'dashboard': 
+        return <Dashboard data={gymData} onNavigate={handleNavigate} />;
+      case 'members': 
+        return (
+          <Members 
+            data={gymData} 
+            shouldOpenModal={shouldOpenAddMember} 
+            setShouldOpenModal={setShouldOpenAddMember}
+            memberIdToView={memberIdToView}         // <--- Pass ID down
+            setMemberIdToView={setMemberIdToView}   // <--- Pass reset function
+          />
+        );
       case 'plans': return <MembershipPlans data={gymData} />;
       case 'attendance': return <AttendanceTracking data={gymData} />;
       case 'billing': return <BillingPayment data={gymData} />;
@@ -32,10 +61,10 @@ function App() {
       case 'inquiries': return <InquiryManagement data={gymData} />;
       case 'sms': return <SMSNotifications />; 
       case 'financial': return <FinancialReports data={gymData} />;
-      case 'reports': return <Reports data={gymData} />; // This now shows your Revenue charts
-      case 'analytics': return <Reports data={gymData} />; // Redirect analytics to reports
+      case 'reports': return <Reports data={gymData} />;
+      case 'analytics': return <Reports data={gymData} />;
       case 'profile': return <GymProfile data={gymData} />;
-      default: return <Dashboard data={gymData} setActiveTab={setActiveTab} />;
+      default: return <Dashboard data={gymData} onNavigate={handleNavigate} />;
     }
   };
 
@@ -49,12 +78,10 @@ function App() {
         <title>{getPageTitle()}</title>
       </Helmet>
       
-      {/* We pass 'data={gymData}' here so the Header inside MainLayout 
-         can use it for Search, Notifications, and Admin Profile.
-      */}
       <MainLayout 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
+        onViewMember={handleViewMember} // <--- Pass the new handler to Layout
         gymProfile={gymData.gymProfile}
         data={gymData} 
       >

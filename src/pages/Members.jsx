@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Camera, RefreshCw, Eye, DollarSign, Calendar, Phone, Mail, MapPin } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormInput, FormSelect } from '@/components/ui/form-input';
@@ -10,21 +10,20 @@ import { useToast } from '@/components/ui/use-toast';
 import { validateMemberForm } from '@/utils/ValidationUtils';
 import { exportMembersToCSV } from '@/utils/ExportUtils';
 
-const Members = ({ data }) => {
-  // Added 'payments' to destructuring so we can show history
+// Added memberIdToView and setMemberIdToView props
+const Members = ({ data, shouldOpenModal, setShouldOpenModal, memberIdToView, setMemberIdToView }) => {
   const { members, plans, payments, addMember, updateMember, deleteMember } = data;
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   
-  // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // New Profile Modal
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const [selectedMember, setSelectedMember] = useState(null);
-  const [memberStats, setMemberStats] = useState({ totalPaid: 0, pending: 0, history: [] }); // Stats for profile
+  const [memberStats, setMemberStats] = useState({ totalPaid: 0, pending: 0, history: [] });
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -35,6 +34,27 @@ const Members = ({ data }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [stream, setStream] = useState(null);
 
+  // --- 1. Auto Open Add Modal ---
+  useEffect(() => {
+    if (shouldOpenModal) {
+       setTimeout(() => handleOpenModal(), 100);
+       if(setShouldOpenModal) setShouldOpenModal(false);
+    }
+  }, [shouldOpenModal]);
+
+  // --- 2. Auto Open Profile View (Eye Icon Logic) ---
+  useEffect(() => {
+    if (memberIdToView && members.length > 0) {
+      const foundMember = members.find(m => m.id === memberIdToView);
+      if (foundMember) {
+        // Slight delay to ensure UI is ready
+        setTimeout(() => handleViewProfile(foundMember), 100);
+        if (setMemberIdToView) setMemberIdToView(null); // Reset
+      }
+    }
+  }, [memberIdToView, members]);
+
+  // Camera stream effect
   useEffect(() => {
     if (isCameraOpen && videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -48,20 +68,10 @@ const Members = ({ data }) => {
     return matchesSearch && matchesStatus;
   });
 
-  // --- NEW: Handle View Profile ---
   const handleViewProfile = (member) => {
-    // 1. Get this member's payments
     const history = payments.filter(p => p.memberId === member.id);
-    
-    // 2. Calculate totals
-    const totalPaid = history
-        .filter(p => p.status === 'paid')
-        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
-        
-    const pending = history
-        .filter(p => p.status === 'pending')
-        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
-
+    const totalPaid = history.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    const pending = history.filter(p => p.status === 'pending').reduce((sum, p) => sum + parseFloat(p.amount), 0);
     setSelectedMember(member);
     setMemberStats({ totalPaid, pending, history });
     setIsProfileOpen(true);
@@ -158,7 +168,6 @@ const Members = ({ data }) => {
 
   return (
     <div className="space-y-6">
-      {/* Search & Action Bar */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <div className="flex gap-2 items-center w-full sm:w-auto">
           <div className="relative w-full sm:w-72">
@@ -191,7 +200,6 @@ const Members = ({ data }) => {
         </div>
       </div>
 
-      {/* Members Table */}
       <Card className="border-slate-100 shadow-md overflow-hidden">
         <Table>
           <TableHeader>
@@ -239,7 +247,6 @@ const Members = ({ data }) => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {/* View Profile Button */}
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-emerald-500 hover:bg-emerald-50" onClick={() => handleViewProfile(member)}>
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -258,15 +265,9 @@ const Members = ({ data }) => {
       </Card>
 
       {/* --- MEMBER PROFILE MODAL --- */}
-      <Modal 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)} 
-        title="Member Profile"
-        size="lg"
-      >
+      <Modal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} title="Member Profile" size="lg">
         {selectedMember && (
           <div className="space-y-6">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row gap-6 items-center md:items-start pb-6 border-b border-slate-100">
                <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden border-4 border-white shadow-lg shrink-0">
                   {selectedMember.photo ? (
@@ -305,7 +306,6 @@ const Members = ({ data }) => {
                </div>
             </div>
 
-            {/* Financial Stats */}
             <div className="grid grid-cols-2 gap-4">
                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                   <p className="text-xs font-semibold text-emerald-600 uppercase">Total Paid</p>
@@ -317,7 +317,6 @@ const Members = ({ data }) => {
                </div>
             </div>
 
-            {/* Payment History Table */}
             <div>
                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-[#FF6B35]" /> Payment History
@@ -363,13 +362,7 @@ const Members = ({ data }) => {
         )}
       </Modal>
 
-      {/* Edit/Add Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        title={selectedMember ? 'Edit Member Details' : 'Register New Member'}
-        size="lg"
-      >
+      <Modal isOpen={isModalOpen} onClose={handleModalClose} title={selectedMember ? 'Edit Member Details' : 'Register New Member'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
              <div className="lg:col-span-1 flex flex-col items-center gap-4">
